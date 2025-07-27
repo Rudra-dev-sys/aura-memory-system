@@ -1,0 +1,19 @@
+{
+  "name": "server",
+  "version": "1.0.0",
+  "description": "Aura Memory System Backend",
+  "main": "index.js",
+  "type": "module",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "author": "Your Name",
+  "license": "ISC",
+  "dependencies": {
+    "body-parser": "^1.20.3",
+    "cohere-ai": "^7.18.0",
+    "cors": "^2.8.5",
+    "express": "^4.21.2"
+  },
+  "keywords": []
+}
