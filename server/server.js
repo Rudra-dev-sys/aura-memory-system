@@ -1,58 +1,31 @@
 import express from "express";
+import mongoose from "mongoose";
 import cors from "cors";
-import bodyParser from "body-parser";
+import dotenv from "dotenv";
+import memoryRoutes from "./routes/memories.js";
+
+dotenv.config();
 
 const app = express();
-const PORT = 5000;
+const PORT = process.env.PORT || 5000;
 
+// Middleware
 app.use(cors());
-app.use(bodyParser.json());
+app.use(express.json());
 
-let memories = [];
+// Routes
+app.use("/api/memories", memoryRoutes);
 
-// ✅ Root route to handle `/` and show server is running
-app.get("/", (req, res) => {
-  res.send("🧠 Aura Memory System API is running!");
-});
-
-// ✅ Get all memories
-app.get("/api/memories", (req, res) => {
-  res.json(memories);
-});
-
-// ✅ Add a new memory
-app.post("/api/memories", (req, res) => {
-  const { content, category } = req.body;
-
-  if (!content) {
-    return res.status(400).json({ error: "Memory content is required." });
-  }
-
-  const newMemory = {
-    id: Date.now().toString(),
-    content,
-    category: category || "",
-    createdAt: new Date().toISOString(),
-  };
-
-  memories.push(newMemory);
-  res.status(201).json(newMemory);
-});
-
-// ✅ Stats route
-app.get("/api/stats", (req, res) => {
-  const total = memories.length;
-  const totalChars = memories.reduce((sum, m) => sum + m.content.length, 0);
-  const avgLength = total === 0 ? 0 : totalChars / total;
-
-  res.json({
-    totalMemories: total,
-    totalCharacters: totalChars,
-    averageLength: avgLength.toFixed(2),
-  });
-});
-
-// ✅ Start the server
-app.listen(PORT, () => {
-  console.log(`✅ Aura Memory System API is running on port ${PORT}`);
-});
+// MongoDB Connection
+mongoose
+  .connect(process.env.MONGO_URI, {
+    useNewUrlParser: true,
+    useUnifiedTopology: true,
+  })
+  .then(() => {
+    console.log("✅ Connected to MongoDB");
+    app.listen(PORT, () => {
+      console.log(`🚀 Server running on port ${PORT}`);
+    });
+  })
+  .catch((error) => console.error("MongoDB error:", error));
