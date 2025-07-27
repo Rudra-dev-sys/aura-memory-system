@@ -1,85 +1,87 @@
-// src/App.js
-import React, { useEffect, useState } from "react";
-import axios from "axios";
+// client/src/App.js
+import React, { useState, useEffect } from "react";
 import "./App.css";
 
-axios.defaults.baseURL = "http://localhost:5000"; // ✅ Set backend base URL
+const BACKEND_URL = "https://aura-backend.onrender.com"; // ✅ change this to your actual backend URL
 
 function App() {
-  const [memories, setMemories] = useState([]);
-  const [stats, setStats] = useState({
-    totalMemories: 0,
-    totalCharacters: 0,
-    averageLength: 0,
-  });
-  const [text, setText] = useState("");
+  const [memory, setMemory] = useState("");
   const [category, setCategory] = useState("");
+  const [memories, setMemories] = useState([]);
+  const [stats, setStats] = useState({ total: 0, characters: 0 });
 
   const fetchMemories = async () => {
     try {
-      const res = await axios.get("/api/memories");
-      setMemories(res.data);
-    } catch (error) {
-      console.error("Fetch memories failed:", error);
+      const res = await fetch(`${BACKEND_URL}/memories`);
+      const data = await res.json();
+      setMemories(data);
+      const total = data.length;
+      const characters = data.reduce((sum, mem) => sum + mem.text.length, 0);
+      setStats({
+        total,
+        characters,
+        average: total === 0 ? 0 : (characters / total).toFixed(2),
+      });
+    } catch (err) {
+      console.error("Error fetching memories:", err);
     }
   };
 
-  const fetchStats = async () => {
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (!memory.trim()) return;
     try {
-      const res = await axios.get("/api/stats");
-      setStats(res.data);
-    } catch (error) {
-      console.error("Fetch stats failed:", error);
-    }
-  };
-
-  const saveMemory = async () => {
-    if (!text.trim()) return alert("Memory cannot be empty");
-    try {
-      await axios.post("/api/memories", { text, category });
-      setText("");
+      await fetch(`${BACKEND_URL}/memories`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ text: memory, category }),
+      });
+      setMemory("");
       setCategory("");
       fetchMemories();
-      fetchStats();
-    } catch (error) {
-      console.error("Save memory failed:", error);
+    } catch (err) {
+      console.error("Error saving memory:", err);
     }
   };
 
   useEffect(() => {
     fetchMemories();
-    fetchStats();
   }, []);
 
   return (
-    <div className="app">
-      <h1 className="title">🧠 Aura Memory System</h1>
-      <div className="input-section">
+    <div className="App">
+      <h1>🧠 Aura Memory System</h1>
+      <form onSubmit={handleSubmit}>
         <textarea
-          placeholder="Type your memory here..."
-          value={text}
-          onChange={(e) => setText(e.target.value)}
+          value={memory}
+          onChange={(e) => setMemory(e.target.value)}
+          placeholder="Enter your memory..."
         />
         <input
-          placeholder="Category (optional)"
+          type="text"
           value={category}
           onChange={(e) => setCategory(e.target.value)}
+          placeholder="Category (optional)"
         />
-        <button onClick={saveMemory}>Save Memory</button>
-      </div>
+        <button type="submit">Save Memory</button>
+      </form>
 
       <div className="stats">
         <h3>📊 Stats:</h3>
-        <p>Total Memories: {stats.totalMemories}</p>
-        <p>Total Characters: {stats.totalCharacters}</p>
-        <p>Average Length: {stats.averageLength} chars</p>
+        <p>Total Memories: {stats.total}</p>
+        <p>Total Characters: {stats.characters}</p>
+        <p>Average Length: {stats.average || 0} chars</p>
       </div>
 
       <div className="memory-list">
-        {memories.map((mem) => (
-          <div key={mem._id} className="memory-card">
+        <h3>📘 Your Memories</h3>
+        {memories.length === 0 && <p>No memories saved yet.</p>}
+        {memories.map((mem, idx) => (
+          <div key={idx} className="memory-card">
             <p>{mem.text}</p>
-            {mem.category && <span>📁 {mem.category}</span>}
+            {mem.category && <small>📁 {mem.category}</small>}
           </div>
         ))}
       </div>
